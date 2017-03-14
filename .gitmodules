@@ -1,0 +1,15 @@
+[submodule "src/dep/Beast"]
+	path = src/dep/Beast
+	url = git@github.com:vinniefalco/Beast.git
+[submodule "src/dep/rapidjson"]
+	path = src/dep/rapidjson
+	url = git@github.com:miloyip/rapidjson.git
+[submodule "src/dep/boost"]
+	path = src/dep/boost
+	url = https://github.com/boostorg/boost
+[submodule "src/dep/openssl"]
+	path = src/dep/openssl
+	url = git@github.com:openssl/openssl.git
+[submodule "cscoins"]
+	path = cscoins
+	url = git@github.com:csgames/cscoins.git
