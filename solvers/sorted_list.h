@@ -4,18 +4,37 @@
 #include <openssl/sha.h>
 #include <algorithm>
 #include <array>
+#include <atomic>
 #include <cstring>
 #include <iostream>
 #include <random>
 #include <string>
+#include <thread>
+
+#include "../guarded_value.h"
 
 #define TO_HEX_CHAR(c) ((c) < 10 ? '0' + (c) : 'a' + (c)-10)
+
+void custom_to_string(uint64_t n, std::string& buffer) {
+  if (n == 0) {
+    buffer = "0";
+    return;
+  }
+
+  buffer.clear();
+  while (n != 0) {
+    buffer.push_back('0' + (n % 10));
+    n /= 10;
+  }
+  std::reverse(buffer.begin(), buffer.end());
+}
 
 uint64_t generate_seed(const uint64_t nonce,
                        const std::string& last_solution_hash,
                        std::string& buffer,
                        unsigned char hash[SHA256_DIGEST_LENGTH]) {
-  buffer = std::to_string(nonce);
+  // buffer = std::to_string(nonce);
+  custom_to_string(nonce, buffer);
   SHA256_CTX nonce_ctx;
   SHA256_Init(&nonce_ctx);
   SHA256_Update(&nonce_ctx, last_solution_hash.data(),
@@ -28,26 +47,29 @@ uint64_t generate_seed(const uint64_t nonce,
   return new_seed;
 }
 
-uint64_t solve_sorted_list(const std::string& last_solution_hash,
-                           const std::string& hash_prefix,
-                           const int n_elements) {
-  std::cout << last_solution_hash << " " << hash_prefix << " " << n_elements
-            << std::endl;
+template <typename Comparator>
+void solve_sorted_list(const std::string& last_solution_hash,
+                       const std::string& hash_prefix, const int n_elements,
+                       const std::atomic<bool>& stopped,
+                       GuardedValue<uint64_t>& nonce,
+                       const uint64_t initial_nonce) {
+  std::cout << "Mining from " << std::this_thread::get_id() << std::endl;
+
   std::string buffer;
+  Comparator cmp;
   unsigned char hash[SHA256_DIGEST_LENGTH];
-  uint64_t last_nonce = rand();
+  uint64_t last_nonce = initial_nonce;
   const auto initial_seed =
       generate_seed(last_nonce, last_solution_hash, buffer, hash);
 
   std::mt19937_64 rng(initial_seed);
   std::vector<std::uint64_t> list(n_elements);
 
-  while (true) {
+  while (!stopped) {
     for (int i = 0; i < n_elements; ++i) {
       list[i] = rng();
     }
-
-    std::sort(list.begin(), list.end());
+    std::sort(list.begin(), list.end(), cmp);
 
     SHA256_CTX solution_ctx;
     SHA256_Init(&solution_ctx);
@@ -57,7 +79,8 @@ uint64_t solve_sorted_list(const std::string& last_solution_hash,
     for (int i = 0; i < n_elements; ++i) {
       // Can we make this faster?  Home made to_string directly into the
       // buffer?
-      buffer = std::to_string(list[i]);
+      // buffer = std::to_string(list[i]);
+      custom_to_string(list[i], buffer);
       SHA256_Update(&solution_ctx, buffer.data(), buffer.size());
     }
 
@@ -71,8 +94,10 @@ uint64_t solve_sorted_list(const std::string& last_solution_hash,
     }
 
     if (buffer == hash_prefix) {
-      std::cout << "Found: " << last_nonce << " " << buffer << std::endl;
-      return last_nonce;
+      nonce.hold();
+      nonce.set(last_nonce);
+      nonce.drop();
+      break;
     }
 
     // Generate the new seed.
