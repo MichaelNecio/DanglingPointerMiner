@@ -66,9 +66,10 @@ void solve_sorted_list(const std::string& last_solution_hash,
   std::vector<std::uint64_t> list(n_elements);
 
   while (!stopped) {
-    for (int i = 0; i < n_elements; ++i) {
-      list[i] = rng();
+    for (auto& i : list) {
+      i = rng();
     }
+
     std::sort(list.begin(), list.end(), cmp);
 
     SHA256_CTX solution_ctx;

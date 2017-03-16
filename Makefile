@@ -7,5 +7,5 @@ CPPFLAGS = -I dep/easywsclient \
 			  -I src/lib -I src/solvers
 
 all:
-	g++ src/master/master.cpp dep/easywsclient/easywsclient.cpp $(CPPFLAGS) -std=c++1y -lcrypto -Wno-deprecated -Wno-deprecated-declarations -pthread
+	g++ src/master/master.cpp dep/easywsclient/easywsclient.cpp $(CPPFLAGS) -std=c++1y -lcrypto -Wno-deprecated -Wno-deprecated-declarations -lpthread -O3
 
