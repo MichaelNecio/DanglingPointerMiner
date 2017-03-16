@@ -1,9 +1,9 @@
 [submodule "cscoins"]
 	path = cscoins
 	url = https://github.com/csgames/cscoins
-[submodule "rapidjson"]
-	path = rapidjson
-	url = https://github.com/miloyip/rapidjson
-[submodule "easywsclient"]
-	path = easywsclient
-	url = https://github.com/dhbaird/easywsclient
+[submodule "dependencies/rapidjson"]
+	path = dependencies/rapidjson
+	url = https://github.com/miloyip/rapidjson.git
+[submodule "dependencies/easywsclient"]
+	path = dependencies/easywsclient
+	url = https://github.com/dhbaird/easywsclient.git
