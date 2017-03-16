@@ -1,12 +1,12 @@
 [submodule "cscoins"]
 	path = cscoins
 	url = https://github.com/csgames/cscoins
+[submodule "dep/openssl"]
+	path = dep/openssl
+	url = https://github.com/openssl/openssl.git
 [submodule "dep/rapidjson"]
 	path = dep/rapidjson
 	url = https://github.com/miloyip/rapidjson.git
 [submodule "dep/easywsclient"]
 	path = dep/easywsclient
 	url = https://github.com/dhbaird/easywsclient.git
-[submodule "dep/openssl"]
-	path = dep/openssl
-	url = https://github.com/openssl/openssl.git
