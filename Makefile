@@ -1,9 +1,9 @@
 CC  = gcc
 CXX = g++
-CCFLAGS  = -Wall -Wextra -pthread -static
+CCFLAGS  = -Wall -Wextra -pthread
 CXXFLAGS = $(CCFLAGS) -std=c++14
-CPPFLAGS = -I dependencies/easywsclient \
-			  -I dependencies/rapidjson/include \
+CPPFLAGS = -I dep/easywsclient \
+			  -I dep/rapidjson/include \
 			  -I src/lib -I src/solvers
 
 all:
