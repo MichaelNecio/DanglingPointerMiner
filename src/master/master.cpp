@@ -85,7 +85,7 @@ int main() {
   GuardedValue<uint64_t> nonce;
 
   std::unique_ptr<WebSocket> ws(
-      WebSocket::from_url("ws://localhost:8989/client"));
+      WebSocket::from_url("ws://coins.necio.ca:8989/client"));
   if (!ws) {
     std::cerr << "Error connecting to websocket" << std::endl;
     return 1;
