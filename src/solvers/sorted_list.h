@@ -11,7 +11,7 @@
 #include <string>
 #include <thread>
 
-#include "../guarded_value.h"
+#include "guarded_value.h"
 
 #define TO_HEX_CHAR(c) ((c) < 10 ? '0' + (c) : 'a' + (c)-10)
 

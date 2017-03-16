@@ -2,14 +2,14 @@
 #include <iostream>
 #include <memory>
 
-#include "easywsclient/easywsclient.hpp"
+#include "easywsclient.hpp"
 
-#include "rapidjson/include/rapidjson/document.h"
-#include "rapidjson/include/rapidjson/stringbuffer.h"
-#include "rapidjson/include/rapidjson/writer.h"
+#include "rapidjson/document.h"
+#include "rapidjson/stringbuffer.h"
+#include "rapidjson/writer.h"
 
 #include "guarded_value.h"
-#include "solvers/sorted_list.h"
+#include "sorted_list.h"
 #include "threadpool.h"
 
 using namespace rapidjson;
