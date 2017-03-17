@@ -10,3 +10,6 @@
 [submodule "dep/uWebSockets"]
 	path = dep/uWebSockets
 	url = https://github.com/uWebSockets/uWebSockets
+[submodule "dep/gcc"]
+	path = dep/gcc
+	url = https://github.com/gcc-mirror/gcc.git
