@@ -85,10 +85,12 @@ void solve_sorted_list(const std::string& last_solution_hash,
     SHA256_Final(hash, &solution_ctx);
 
     buffer.clear();
-    // TODO: Is the hash_prefix always the same size?
-    for (unsigned i = 0; i < 2; ++i) {
-      buffer.push_back(TO_HEX_CHAR(hash[i] >> 4));
-      buffer.push_back(TO_HEX_CHAR(hash[i] & 0x0F));
+    for (unsigned i = 0; i < hash_prefix.length(); ++i) {
+      if ((i & 1ul) == 0ul) {
+        buffer.push_back(TO_HEX_CHAR(hash[i / 2] >> 4));
+      } else {
+        buffer.push_back(TO_HEX_CHAR(hash[i / 2] & 0x0F));
+      }
     }
 
     if (buffer == hash_prefix) {
