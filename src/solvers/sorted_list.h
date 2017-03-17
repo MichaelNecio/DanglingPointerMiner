@@ -78,9 +78,6 @@ void solve_sorted_list(const std::string& last_solution_hash,
     // Generate the solution hash on the fly to avoid continual string
     // concatenation.
     for (int i = 0; i < n_elements; ++i) {
-      // Can we make this faster?  Home made to_string directly into the
-      // buffer?
-      // buffer = std::to_string(list[i]);
       custom_to_string(list[i], buffer);
       SHA256_Update(&solution_ctx, buffer.data(), buffer.size());
     }

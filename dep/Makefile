@@ -8,5 +8,6 @@ OpenSSL_CONFIG = no-shared no-ui no-stdio no-deprecated no-autoalginit no-autoer
 					  -flto -march=native -static -Ofast -funroll-loops -fassociative-math  \
 					  -freciprocal-math -fno-signed-zeros -fno-trapping-math -frename-registers
 all:
+	$(MAKE) -C uWebSockets
 	cd openssl; ./config $(OpenSSL_CONFIG)
 	$(MAKE) -C openssl

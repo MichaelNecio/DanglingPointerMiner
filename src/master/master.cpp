@@ -13,7 +13,6 @@
 #include "threadpool.h"
 
 using namespace rapidjson;
-using namespace easywsclient;
 using namespace std::literals::chrono_literals;
 
 Document parse_json(const std::string& message) {
@@ -128,4 +127,5 @@ int main() {
 
   ws.connect("ws://localhost:8989/client", nullptr);
   ws.run();
+  poll.join();
 }
