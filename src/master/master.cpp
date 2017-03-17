@@ -2,7 +2,7 @@
 #include <iostream>
 #include <memory>
 
-#include "easywsclient.hpp"
+#include <uWs/Hub.h>
 
 #include "rapidjson/document.h"
 #include "rapidjson/stringbuffer.h"
@@ -56,7 +56,7 @@ void start_jobs(const Document& message, qp::threading::Threadpool& pool,
   }
 }
 
-void send_submission(WebSocket* ws, uint64_t nonce) {
+void send_submission(uWS::WebSocket<uWS::CLIENT>& ws, uint64_t nonce) {
   const auto nonce_string = std::to_string(nonce);
   StringBuffer buffer;
   Writer<StringBuffer> writer(buffer);
@@ -73,7 +73,7 @@ void send_submission(WebSocket* ws, uint64_t nonce) {
   writer.EndObject();
 
   std::cout << "sending: " << buffer.GetString() << std::endl;
-  ws->send(buffer.GetString());
+  ws.send(buffer.GetString());
 }
 
 int main() {
@@ -84,40 +84,48 @@ int main() {
   qp::threading::Threadpool thread_pool;
   GuardedValue<uint64_t> nonce;
 
-  std::unique_ptr<WebSocket> ws(
-      WebSocket::from_url("ws://coins.necio.ca:8989/client"));
-  if (!ws) {
-    std::cerr << "Error connecting to websocket" << std::endl;
-    return 1;
-  }
+  uWS::Hub ws;
+  uWS::WebSocket<uWS::CLIENT> csgames_socket;
 
-  ws->send("{\"command\":\"get_current_challenge\",\"args\":{}}");
+  ws.onConnection([&](uWS::WebSocket<uWS::CLIENT> s, uWS::HttpRequest _) {
+    s.send("{\"command\":\"get_current_challenge\",\"args\":{}}");
+    csgames_socket = s;
+  });
 
-  while (true) {
-    nonce.hold();
-    if (nonce.set()) {
-      std::cout << "Nonce was discovered, making submission" << std::endl;
-      send_submission(ws.get(), nonce.get());
-      stop_jobs = true;
+  ws.onMessage([&](uWS::WebSocket<uWS::CLIENT> s, const char* message,
+                   size_t length, uWS::OpCode) {
+    std::string actual_message(message, message + length);
+    std::cout << "Received: " << std::endl << actual_message << std::endl;
+    std::cout << "length: " << length << std::endl;
+    const auto json_message = parse_json(actual_message);
+
+    if (!is_challenge_message(json_message)) return;
+
+    std::cout << "Stopping existing jobs" << std::endl;
+    stop_jobs = true;
+    std::this_thread::sleep_for(500ms);
+    stop_jobs = false;
+
+    std::cout << "Starting mining jobs" << std::endl;
+    start_jobs(json_message, thread_pool, stop_jobs, nonce);
+  });
+
+  std::thread poll([&]() {
+    while (true) {
+      nonce.hold();
+      if (nonce.set()) {
+        std::cout << "Nonce was discovered, making submission" << std::endl;
+        send_submission(csgames_socket, nonce.get());
+        stop_jobs = true;
+        // TODO clean up futures instead
+        std::this_thread::sleep_for(500ms);
+      }
+      nonce.unset();
+      nonce.drop();
       std::this_thread::sleep_for(500ms);
     }
-    nonce.unset();
-    nonce.drop();
+  });
 
-    ws->poll();
-    ws->dispatch([&](const std::string& message) {
-      std::cout << "Received: " << std::endl << message << std::endl;
-      const auto json_message = parse_json(message);
-
-      if (!is_challenge_message(json_message)) return;
-
-      std::cout << "Stopping existing jobs" << std::endl;
-      stop_jobs = true;
-      std::this_thread::sleep_for(500ms);
-      stop_jobs = false;
-
-      std::cout << "Starting mining jobs" << std::endl;
-      start_jobs(json_message, thread_pool, stop_jobs, nonce);
-    });
-  }
+  ws.connect("ws://localhost:8989/client", nullptr);
+  ws.run();
 }
