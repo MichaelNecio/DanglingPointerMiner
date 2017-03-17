@@ -7,12 +7,6 @@
 [submodule "dep/rapidjson"]
 	path = dep/rapidjson
 	url = https://github.com/miloyip/rapidjson.git
-[submodule "dep/easywsclient"]
-	path = dep/easywsclient
-	url = https://github.com/dhbaird/easywsclient.git
-[submodule "dep/--force"]
-	path = dep/--force
-	url = https://github.com/uWebSockets/uWebSockets
 [submodule "dep/uWebSockets"]
 	path = dep/uWebSockets
 	url = https://github.com/uWebSockets/uWebSockets
