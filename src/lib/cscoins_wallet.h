@@ -12,7 +12,7 @@
 #include <openssl/rsa.h>
 #include <openssl/sha.h>
 
-namespace cscoins {
+namespace cscoins_wallet {
 
 void seed_openssl_RAND() {
   if(RAND_status()) { return; }
@@ -43,7 +43,7 @@ class CSCoinsWallet {
         load_keys_from_file(public, private)
         break;
       case file_type::not_found:
-        generate_keys(public, private);
+        // TODO: Generate keys if they don't exist
         break;
       case file_type::unknown:
         throw filesystem_error("Are you sure the persmissions are correct?",
@@ -93,5 +93,5 @@ class CSCoinsWallet {
   }
 };
 
-}  // cscoins
+}  // cscoins_wallet
 #endif
