@@ -38,6 +38,7 @@ bool keys_are_pair(const RSA& public_key, const RSA& private_key) {
 class CSCoinsWallet {
  public:
   CSCoinsWallet(path public_key_file, path private_key_file) {
+    using std::filesystem;
     switch(status(public_key_file) & status(private_key_file)) {  // Bitwise and
       case file_type::regular:
         load_keys_from_file(public_key_file, private_key_file)
