@@ -36,22 +36,21 @@ bool keys_are_pair(const RSA& public_key, const RSA& private_key) {
 
 class CSCoinsWallet {
  public:
-  CSCoinsWallet(path public  = "./.keys/DanglingPointers_rsa.public",
-                path private = "./.keys/DanglingPointers_rsa.private") {
-    switch(status(public) & status(private)) {  // Bitwise and
+  CSCoinsWallet(path public_key_file, path private_key_file) {
+    switch(status(public_key_file) & status(private_key_file)) {  // Bitwise and
       case file_type::regular:
-        load_keys_from_file(public, private)
+        load_keys_from_file(public_key_file, private_key_file)
         break;
       case file_type::not_found:
         // TODO: Generate keys if they don't exist
         break;
       case file_type::unknown:
         throw filesystem_error("Are you sure the persmissions are correct?",
-                               public, private, errno);
+                               public_key_file, private_key_file, errno);
         break;
       default:
         throw filesystem_error("One of those is a directory, or worse.",
-                               public, private, errno);
+                               public_key_file, private_key_file, errno);
         break;
     }
   }
@@ -59,7 +58,6 @@ class CSCoinsWallet {
  private:
   std::unique_ptr<RSA*, RSA_free> public_key;
   std::unique_ptr<RSA*, RSA_free> private_key;
-  constexpr string team_name { "Dangling Pointers" };
 
   void load_keys_from_file(path public_path, path private_path) {
     const unique_ptr<std::FILE *, std::fclose> public_key_file {
