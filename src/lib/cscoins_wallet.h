@@ -8,6 +8,7 @@
 #include <memory>
 #include <random>
 #include <string>
+#include <vector>
 
 #include <openssl/rand.h>
 #include <openssl/rsa.h>
@@ -38,12 +39,13 @@ bool keys_are_pair(const RSA& public_key, const RSA& private_key) {
 }  // namespace
 
 class CSCoinsWallet {
+  using namespace std::filesystem;
  public:
  // TODO: Method to sign strings
  // TODO: Getter method for wallet id
 
-  CSCoinsWallet(path public_key_file, path private_key_file) {
-    using namespace std::filesystem;
+  CSCoinsWallet(const path& public_key_file, const path& private_key_file,
+                const std::string& team_name) {
     switch(status(public_key_file) & status(private_key_file)) {  // Bitwise and
       case file_type::regular:
         load_keys_from_file(public_key_file, private_key_file)
