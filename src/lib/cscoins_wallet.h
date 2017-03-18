@@ -5,6 +5,7 @@
 #include <cstring>
 #include <exception>
 #include <filesystem>
+#include <memory>
 #include <random>
 #include <string>
 
@@ -60,7 +61,7 @@ class CSCoinsWallet {
   std::unique_ptr<RSA*, RSA_free> private_key;
 
   void load_keys_from_file(path public_path, path private_path) {
-    const unique_ptr<std::FILE *, std::fclose> public_key_file {
+    const std::unique_ptr<std::FILE *, std::fclose> public_key_file {
       std::fopen(public_path.c_str(), "r");
     };
     if(!public_key_file)
