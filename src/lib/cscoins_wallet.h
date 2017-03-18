@@ -14,7 +14,7 @@
 #include <openssl/sha.h>
 
 namespace cscoins_wallet {
-namespace detail {
+namespace {
 
 void seed_openssl_RAND() {
   if(RAND_status()) { return; }
@@ -35,7 +35,7 @@ bool keys_are_pair(const RSA& public_key, const RSA& private_key) {
   return msg == decrypted;
 }
 
-}  // namespace detail
+}  // namespace
 
 class CSCoinsWallet {
  public:
