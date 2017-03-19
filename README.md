@@ -7,6 +7,6 @@ UWindsor Team A's CS Coin miner for the 2017 CS Games.
 
 * uWebSockets (Included, just run `make` from the `dep` folder)
 * OpenSSL (Use the system one)
-* Libuv (Only if not on linux)
+* Libuv (Only if you're not on linux)
 * zlib
 * C++14
