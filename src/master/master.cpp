@@ -9,8 +9,10 @@
 #include "rapidjson/writer.h"
 
 #include "guarded_value.h"
-#include "sorted_list.h"
 #include "threadpool.h"
+
+#include "shortest_path.h"
+#include "sorted_list.h"
 
 using namespace rapidjson;
 using namespace std::literals::chrono_literals;
@@ -43,6 +45,24 @@ void start_sorted_list_jobs(const Document& message,
   }
 }
 
+void start_shortest_path_jobs(const Document& message,
+                              qp::threading::Threadpool& pool,
+                              const std::atomic<bool>& stop,
+                              GuardedValue<uint64_t>& nonce) {
+  const std::string& last_solution_hash =
+      message["last_solution_hash"].GetString();
+  const std::string& hash_prefix = message["hash_prefix"].GetString();
+  const int grid_size = message["parameters"]["grid_size"].GetInt();
+  const int n_blockers = message["parameters"]["nb_blockers"].GetInt();
+
+  // Intentional copy.
+  for (unsigned i = 0; i < std::thread::hardware_concurrency(); ++i) {
+    std::cout << "Starting thread: " << i << std::endl;
+    pool.add(solve_shortest_path, last_solution_hash, hash_prefix, grid_size,
+             n_blockers, std::cref(stop), std::ref(nonce), rand());
+  }
+}
+
 void start_jobs(const Document& message, qp::threading::Threadpool& pool,
                 const std::atomic<bool>& stop, GuardedValue<uint64_t>& nonce) {
   const std::string challenge_type = message["challenge_name"].GetString();
@@ -50,6 +70,8 @@ void start_jobs(const Document& message, qp::threading::Threadpool& pool,
     start_sorted_list_jobs<std::less<uint64_t>>(message, pool, stop, nonce);
   } else if (challenge_type == "reverse_sorted_list") {
     start_sorted_list_jobs<std::greater<uint64_t>>(message, pool, stop, nonce);
+  } else if (challenge_type == "shortest_path") {
+    start_shortest_path_jobs(message, pool, stop, nonce);
   } else {
     std::cout << "unsupported challenge type: " << challenge_type << std::endl;
   }
