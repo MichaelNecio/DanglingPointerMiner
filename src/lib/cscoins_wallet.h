@@ -3,8 +3,6 @@
 
 #include <cstdio>
 #include <cstring>
-#include <exception>
-#include <filesystem>
 #include <memory>
 #include <random>
 #include <string>
@@ -15,90 +13,97 @@
 #include <openssl/sha.h>
 
 namespace cscoins_wallet {
-namespace {
+namespace detail {
 
-void seed_openssl_RAND() {
-  if(RAND_status()) { return; }
-  std::random_device rd;
-  auto seed = rd();
-  while(!RAND_add(&seed, sizeof(seed))) { seed = rd(); }
+template <typename T>
+void CHECK(const T& b, const std::string& message) {
+  if (!b) {
+    std::cerr << message << std::endl;
+    abort();
+  }
 }
 
-bool keys_are_pair(const RSA& public_key, const RSA& private_key) {
-  seed_openssl_RAND(); // Needed for encrypting
-  constexpr std::vector<uint8_t> msg = "Files might be modified, must be checked every reading";
+struct RSADeleter {
+  void operator()(RSA* rsa) const { RSA_free(rsa); }
+};
+
+struct FileDeleter {
+  void operator()(FILE* f) const { fclose(f); }
+};
+
+using RSAPtr = std::unique_ptr<RSA, detail::RSADeleter>;
+using FilePtr = std::unique_ptr<FILE, detail::FileDeleter>;
+
+void seed_openssl_RAND() {
+  if (RAND_status()) {
+    return;
+  }
+  std::random_device rd;
+  auto seed = rd();
+  RAND_seed(&seed, sizeof(seed));
+}
+
+bool keys_are_pair(const RSAPtr& public_key, const RSAPtr& private_key) {
+  seed_openssl_RAND();  // Needed for encrypting
+
+  const std::string m =
+      "Files might be modified, must be checked every reading";
+  std::vector<uint8_t> msg(m.begin(), m.end());
+
   std::vector<uint8_t> ciphertext(RSA_size(private_key.get()), '\0');
-  const auto nbytes_encrypted = RSA_public_encrypt(msg.size(), msg.data(),
-      ciphertext.data(), public_key.get(), RSA_NO_PADDING);
+  const auto nbytes_encrypted =
+      RSA_public_encrypt(msg.size(), msg.data(), ciphertext.data(),
+                         public_key.get(), RSA_NO_PADDING);
   std::vector<uint8_t> decrypted(nbytes_encrypted, '\0');
-  RSA_private_decrypt(nbytes_encrypted, ciphertext.data(),
-      decrypted.data(), private_key.get(), RSA_NO_PADDING);
+  RSA_private_decrypt(nbytes_encrypted, ciphertext.data(), decrypted.data(),
+                      private_key.get(), RSA_NO_PADDING);
   return msg == decrypted;
 }
 
-}  // namespace
+}  // namespace detail
 
 class CSCoinsWallet {
-  using namespace std::filesystem;
  public:
- // TODO: Method to sign strings
- // TODO: Getter method for wallet id
+  // TODO: Method to sign strings
+  // TODO: Getter method for wallet id
 
-  CSCoinsWallet(const path& public_key_file, const path& private_key_file,
+  CSCoinsWallet(const std::string& public_key_file,
+                const std::string& private_key_file,
                 const std::string& team_name) {
-    switch(status(public_key_file) & status(private_key_file)) {  // Bitwise and
-      case file_type::regular:
-        load_keys_from_file(public_key_file, private_key_file)
-        break;
-      case file_type::not_found:
-        // TODO: Generate keys if they don't exist
-        break;
-      case file_type::unknown:
-        throw filesystem_error("Are you sure the persmissions are correct?",
-                               public_key_file, private_key_file, errno);
-        break;
-      default:
-        throw filesystem_error("One of those is a directory, or worse.",
-                               public_key_file, private_key_file, errno);
-        break;
-    }
+    load_keys_from_file(public_key_file, private_key_file);
   }
 
  private:
-  const std::unique_ptr<RSA, RSA_free> public_key_;
-  const std::unique_ptr<RSA, RSA_free> private_key_;
+  detail::RSAPtr public_key_;
+  detail::RSAPtr private_key_;
   // TODO: Store wallet id
 
-  void load_keys_from_file(path public_path, path private_path) {
-    using namespace std;
-    using namespace std::filesystem;
-    unique_ptr<FILE *, fclose> public_key_file = fopen(public_path.c_str(), "r");
-    if(!public_key_file)
-      throw filesystem_error("Error opening public key file.", public_path, errno);
-    public_key_ = PEM_read_RSA_PublicKey(public_key_file.get(),
-                                        nullptr, nullptr, nullptr)
-    if(!public_key_)
-      throw filesystem_error("Error reading public key file.", public_path, errno);
-    if(public_key_->d || public_key_->p || public_key_->q)  // private key fields
-      throw filesystem_error("That's a private key.", public_path, errno);
+  void load_keys_from_file(const std::string& public_path,
+                           const std::string& private_path) {
+    using detail::CHECK;
+    detail::FilePtr public_key_file{fopen(public_path.c_str(), "r")};
+    CHECK(public_key_file, "Error opening public key");
 
-    unique_ptr<FILE *, fclose> private_key_file = fopen(private_path.c_str(), "r");
-    if(!private_key_file)
-      throw filesystem_error("Error opening private key file.", private_path, errno);
-    private_key_ = PEM_read_RSA_PrivateKey(private_key_file.get(),
-                                          nullptr, nullptr, nullptr);
-    if(!private_key_)
-      throw filesystem_error("Error reading private key file.", private_path, errno);
-    if(RSA_check_key(private_key_)) {
-      const auto err = ERR_get_error();
-      if(!err)
-        throw filesystem_error("Not a valid private key.", private_path, errno);
-      else
-        throw filesystem_error(ERR_error_string(err, nullptr), private_path, errno);
+    public_key_.reset(PEM_read_RSAPublicKey(public_key_file.get(), nullptr,
+                                            nullptr, nullptr));
+    CHECK(public_key_, "Error reading public key file");
+
+    CHECK(public_key_->d || public_key_->p || public_key_->q,
+          "Thats a private key");
+
+    detail::FilePtr private_key_file{fopen(private_path.c_str(), "r")};
+    CHECK(private_key_file, "Error opening private key file.");
+
+    private_key_.reset(PEM_read_RSAPrivateKey(private_key_file.get(), nullptr,
+                                              nullptr, nullptr));
+    CHECK(private_key_, "Error reading private key file.");
+
+    if (RSA_check_key(private_key_.get())) {
+      CHECK(false, "Bad private key");
     }
-    if(!keys_are_pair(public_key_, private_key_)
-      throw filesystem_error("These public/private keys aren't a pair.",
-                             public_path, private_path, errno);
+
+    CHECK(keys_are_pair(public_key_, private_key_),
+          "These public/private keys aren't a pair.");
   }
 };
 
