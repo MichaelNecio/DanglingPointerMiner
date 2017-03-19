@@ -1,14 +1,15 @@
+all: ../../../bin/uWebSockets/lib/libuWS.a
+
 ../../../bin/uWebSockets/lib/libuWS.a:  ../../../bin/openssl/lib/libcrypto.a \
-																				../../../bin/zlib/lib/libz.a uWebSockets
-	cd uWebSockets; g++ -O3 -flto -ffat-lto-objects -static -march=native \
-											-I src -I ../../../bin/zlib/include -I ../../../bin/openssl/include/openssl \
-											../../../bin/zlib/lib/libz.a \
-											../../../bin/openssl/lib/libcrypto.a ../../../bin/openssl/lib/libssl.a \
-											src/Extensions.cpp src/Group.cpp \
-											src/WebSocketImpl.cpp src/Networking.cpp \
-											src/Hub.cpp src/Node.cpp src/WebSocket.cpp \
-											src/HTTPSocket.cpp src/Socket.cpp src/Epoll.cpp \
-											 -c -o ../../../bin/uWebSockets/lib/libuWS.o
+					../../../bin/zlib/lib/libz.a uWebSockets
+	cd uWebSockets; g++ -c -O3 -flto -ffat-lto-objects -static -march=native \
+		-I src -I ../../../bin/zlib/include -I ../../../bin/openssl/include \
+		../../../bin/zlib/lib/libz.a \
+		../../../bin/openssl/lib/libcrypto.a ../../../bin/openssl/lib/libssl.a \
+		src/Extensions.cpp src/Group.cpp \
+		src/WebSocketImpl.cpp src/Networking.cpp \
+		src/Hub.cpp src/Node.cpp src/WebSocket.cpp \
+		src/HTTPSocket.cpp src/Socket.cpp src/Epoll.cpp
 
 ../../../bin/openssl/lib/libcrypto.a: ../../../bin/zlib/lib/libz.a openssl
 	cd openssl; ./config --prefix="$$PWD/../../../bin/openssl" no-deprecated \
