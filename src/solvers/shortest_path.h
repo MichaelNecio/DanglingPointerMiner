@@ -192,8 +192,7 @@ void solve_shortest_path(const std::string& last_solution_hash,
         uint64_t next_row = current.row + delta_row[i];
         uint64_t next_col = current.col + delta_col[i];
 
-        if ((next_row >= 0 && next_row < ugrid_size) &&
-            (next_col >= 0 && next_col < ugrid_size) &&
+        if (next_row < ugrid_size && next_col < ugrid_size &&
             (grid[next_row][next_col] == PASSABLE)) {
           const auto new_cost = current_cost + 1;
           State next_state{next_row, next_col, new_cost};
