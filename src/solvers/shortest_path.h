@@ -91,6 +91,7 @@ void solve_shortest_path(const std::string& last_solution_hash,
 
   std::unordered_map<State, uint64_t> cost_so_far;
   std::unordered_map<State, State> came_from;
+  std::vector<State> path;
 
   const std::array<int, 4> delta_row{1, -1, 0, 0};
   const std::array<int, 4> delta_col{0, 0, 1, -1};
@@ -106,6 +107,7 @@ void solve_shortest_path(const std::string& last_solution_hash,
     reset_grid(grid);
     cost_so_far.clear();
     came_from.clear();
+    path.clear();
 
     uint64_t start_row = rng() % ugrid_size;
     uint64_t start_col = rng() % ugrid_size;
@@ -142,7 +144,6 @@ void solve_shortest_path(const std::string& last_solution_hash,
       frontier.pop();
 
       if (current.row == end_row && current.col == end_col) {
-        std::vector<State> path;
         State item{end_row, end_col, 0};
         while (came_from.find(item) != came_from.end()) {
           path.push_back(item);
