@@ -1,6 +1,7 @@
 #include <cassert>
 #include <iostream>
 #include <memory>
+#include <vector>
 
 #include "Hub.h"
 
@@ -17,6 +18,7 @@
 
 using namespace rapidjson;
 using namespace std::literals::chrono_literals;
+using JobHandle = std::future<void>;
 
 Document parse_json(const std::string& message) {
   Document d;
@@ -29,53 +31,64 @@ bool is_challenge_message(const Document& d) {
 }
 
 template <typename Comparator>
-void start_sorted_list_jobs(const Document& message,
-                            qp::threading::Threadpool& pool,
-                            const std::atomic<bool>& stop,
-                            GuardedValue<uint64_t>& nonce) {
+std::vector<JobHandle> start_sorted_list_jobs(const Document& message,
+                                              qp::threading::Threadpool& pool,
+                                              const std::atomic<bool>& stop,
+                                              GuardedValue<uint64_t>& nonce) {
   const std::string& last_solution_hash =
       message["last_solution_hash"].GetString();
   const std::string& hash_prefix = message["hash_prefix"].GetString();
   const int n_elements = message["parameters"]["nb_elements"].GetInt();
 
+  std::vector<JobHandle> handles;
   // Intentional copy.
   for (unsigned i = 0; i < std::thread::hardware_concurrency(); ++i) {
     std::cout << "Starting thread: " << i << std::endl;
-    pool.add(solve_sorted_list<Comparator>, last_solution_hash, hash_prefix,
-             n_elements, std::cref(stop), std::ref(nonce), rand());
+    handles.emplace_back(pool.add(solve_sorted_list<Comparator>,
+                                  last_solution_hash, hash_prefix, n_elements,
+                                  std::cref(stop), std::ref(nonce), rand()));
   }
+  return handles;
 }
 
-void start_shortest_path_jobs(const Document& message,
-                              qp::threading::Threadpool& pool,
-                              const std::atomic<bool>& stop,
-                              GuardedValue<uint64_t>& nonce) {
+std::vector<JobHandle> start_shortest_path_jobs(const Document& message,
+                                                qp::threading::Threadpool& pool,
+                                                const std::atomic<bool>& stop,
+                                                GuardedValue<uint64_t>& nonce) {
   const std::string& last_solution_hash =
       message["last_solution_hash"].GetString();
   const std::string& hash_prefix = message["hash_prefix"].GetString();
   const int grid_size = message["parameters"]["grid_size"].GetInt();
   const int n_blockers = message["parameters"]["nb_blockers"].GetInt();
 
+  std::vector<JobHandle> handles;
   // Intentional copy.
   for (unsigned i = 0; i < std::thread::hardware_concurrency(); ++i) {
     std::cout << "Starting thread: " << i << std::endl;
-    pool.add(solve_shortest_path, last_solution_hash, hash_prefix, grid_size,
-             n_blockers, std::cref(stop), std::ref(nonce), rand());
+    handles.emplace_back(pool.add(solve_shortest_path, last_solution_hash,
+                                  hash_prefix, grid_size, n_blockers,
+                                  std::cref(stop), std::ref(nonce), rand()));
   }
+  return handles;
 }
 
-void start_jobs(const Document& message, qp::threading::Threadpool& pool,
-                const std::atomic<bool>& stop, GuardedValue<uint64_t>& nonce) {
+std::vector<JobHandle> start_jobs(const Document& message,
+                                  qp::threading::Threadpool& pool,
+                                  const std::atomic<bool>& stop,
+                                  GuardedValue<uint64_t>& nonce) {
   const std::string challenge_type = message["challenge_name"].GetString();
   if (challenge_type == "sorted_list") {
-    start_sorted_list_jobs<std::less<uint64_t>>(message, pool, stop, nonce);
+    return start_sorted_list_jobs<std::less<uint64_t>>(message, pool, stop,
+                                                       nonce);
   } else if (challenge_type == "reverse_sorted_list") {
-    start_sorted_list_jobs<std::greater<uint64_t>>(message, pool, stop, nonce);
+    return start_sorted_list_jobs<std::greater<uint64_t>>(message, pool, stop,
+                                                          nonce);
   } else if (challenge_type == "shortest_path") {
-    start_shortest_path_jobs(message, pool, stop, nonce);
+    return start_shortest_path_jobs(message, pool, stop, nonce);
   } else {
     std::cout << "unsupported challenge type: " << challenge_type << std::endl;
   }
+  return {};
 }
 
 void send_submission(uWS::WebSocket<uWS::CLIENT>& ws, uint64_t nonce) {
@@ -98,6 +111,17 @@ void send_submission(uWS::WebSocket<uWS::CLIENT>& ws, uint64_t nonce) {
   ws.send(buffer.GetString());
 }
 
+void wait_jobs(std::vector<JobHandle>& job_handles,
+               std::atomic<bool>& stopped) {
+  static std::mutex mu;
+  std::lock_guard<std::mutex> lock(mu);
+
+  stopped = true;
+  for (auto& handle : job_handles) handle.wait();
+  stopped = false;
+  job_handles.clear();
+}
+
 int main() {
   std::srand(time(nullptr));
   std::ios_base::sync_with_stdio(false);
@@ -105,6 +129,7 @@ int main() {
   std::atomic<bool> stop_jobs(false);
   qp::threading::Threadpool thread_pool;
   GuardedValue<uint64_t> nonce;
+  std::vector<JobHandle> job_handles;
 
   uWS::Hub ws;
   uWS::WebSocket<uWS::CLIENT> csgames_socket;
@@ -124,12 +149,10 @@ int main() {
     if (!is_challenge_message(json_message)) return;
 
     std::cout << "Stopping existing jobs" << std::endl;
-    stop_jobs = true;
-    std::this_thread::sleep_for(500ms);
-    stop_jobs = false;
+    wait_jobs(job_handles, stop_jobs);
 
     std::cout << "Starting mining jobs" << std::endl;
-    start_jobs(json_message, thread_pool, stop_jobs, nonce);
+    job_handles = start_jobs(json_message, thread_pool, stop_jobs, nonce);
   });
 
   std::thread poll([&]() {
@@ -138,9 +161,7 @@ int main() {
       if (nonce.set()) {
         std::cout << "Nonce was discovered, making submission" << std::endl;
         send_submission(csgames_socket, nonce.get());
-        stop_jobs = true;
-        // TODO clean up futures instead
-        std::this_thread::sleep_for(500ms);
+        wait_jobs(job_handles, stop_jobs);
       }
       nonce.unset();
       nonce.drop();
