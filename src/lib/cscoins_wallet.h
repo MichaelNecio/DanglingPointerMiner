@@ -7,6 +7,8 @@
 #include <random>
 #include <string>
 #include <vector>
+#include <fstream>
+#include <streambuf>
 
 #include <openssl/rand.h>
 #include <openssl/rsa.h>
@@ -71,12 +73,27 @@ class CSCoinsWallet {
                 const std::string& private_key_file,
                 const std::string& team_name) {
     load_keys_from_file(public_key_file, private_key_file);
+    generate_wallet_id(public_key_file, team_name);
+  }
+
+  std::string sign_str(const std::string& msg) {
+    std::string signed_str(RSA_size(private_key_.get(), RSA_PKCS1_PADDING), '\0');
+    //TODO: Figure out what format they want for this shit
   }
 
  private:
   detail::RSAPtr public_key_;
   detail::RSAPtr private_key_;
-  // TODO: Store wallet id
+  std::string wallet_id_;
+
+  void generate_wallet_id(const std::string& public_path, const std::string& team_name) {
+    std::ifstream public_key_file(public_path);
+    std::string public_key_str((std::istreambuf_iterator<char>(public_key_file)),
+                                std::istreambuf_iterator<char>());
+    std::string temp;
+    temp = team_name + "," + public_key_str;
+    //TODO: Sign this message and save the message as the wallet_id_
+  }
 
   void load_keys_from_file(const std::string& public_path,
                            const std::string& private_path) {
