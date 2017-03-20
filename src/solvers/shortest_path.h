@@ -95,30 +95,40 @@ void solve_shortest_path(const std::string& last_solution_hash,
   const std::array<int, 4> delta_row{1, -1, 0, 0};
   const std::array<int, 4> delta_col{0, 0, 1, -1};
 
+  uint64_t ugrid_size = grid_size;
+
   while (!stopped) {
+    last_nonce = rng();
+    const auto new_seed =
+        generate_seed(last_nonce, last_solution_hash, buffer, hash);
+    rng.seed(new_seed);
+
     reset_grid(grid);
     cost_so_far.clear();
     came_from.clear();
 
-    uint64_t start_row = rng() % grid_size, start_col = rng() % grid_size;
+    uint64_t start_row = rng() % ugrid_size;
+    uint64_t start_col = rng() % ugrid_size;
     while (grid[start_row][start_col] == BLOCKED) {
-      start_row = rng() % grid_size;
-      start_col = rng() % grid_size;
+      start_row = rng() % ugrid_size;
+      start_col = rng() % ugrid_size;
     }
 
-    uint64_t end_row = rng() % grid_size, end_col = rng() % grid_size;
+    uint64_t end_row = rng() % ugrid_size;
+    uint64_t end_col = rng() % ugrid_size;
     while ((start_row == end_row && start_col == end_col) ||
            grid[end_row][end_col] == BLOCKED) {
-      end_row = rng() % grid_size;
-      end_col = rng() % grid_size;
+      end_row = rng() % ugrid_size;
+      end_col = rng() % ugrid_size;
     }
 
     for (int i = 0; i < n_blockers; ++i) {
-      uint64_t block_row = rng() % grid_size, block_col = rng() % grid_size;
-      if ((block_row != start_row && block_col != start_col) &&
-          (block_row != end_row && block_col != end_col)) {
-        grid[block_row][block_col] = BLOCKED;
-      }
+      uint64_t block_row = rng() % ugrid_size;
+      uint64_t block_col = rng() % ugrid_size;
+      if ((block_row == start_row && block_col == start_col) ||
+          (block_row == end_row && block_col == end_col))
+        continue;
+      grid[block_row][block_col] = BLOCKED;
     }
 
     std::priority_queue<State, std::vector<State>,
@@ -140,17 +150,6 @@ void solve_shortest_path(const std::string& last_solution_hash,
         }
         path.push_back(item);
         std::reverse(path.begin(), path.end());
-
-        assert(path.front().row == start_row && path.front().col == start_col);
-        assert(path.back().row == end_row && path.back().col == end_col);
-        for (int i = 0; i < path.size() - 1; ++i) {
-          assert(!(path[i] == path[i + 1]));
-        }
-
-        for (const auto& state : path) {
-          assert(state.row >= 0 && state.row < grid_size && state.col >= 0 &&
-                 state.col < grid_size);
-        }
 
         SHA256_CTX solution_ctx;
         SHA256_Init(&solution_ctx);
@@ -185,32 +184,35 @@ void solve_shortest_path(const std::string& last_solution_hash,
 
       const auto current_cost = cost_so_far[current];
 
-      for (int i = 0; i < 4; ++i) {
+      for (int i = 0; i < delta_row.size(); ++i) {
         // NOTE: I don't think this will underflow since the 0'th row and col
         // are all blockers, therefore they will never be in the queue.
         // But this could be a source of error.
         uint64_t next_row = current.row + delta_row[i];
         uint64_t next_col = current.col + delta_col[i];
 
-        if ((next_row >= 0 && next_row < grid_size) &&
-            (next_col >= 0 && next_col < grid_size) &&
+        if ((next_row >= 0 && next_row < ugrid_size) &&
+            (next_col >= 0 && next_col < ugrid_size) &&
             (grid[next_row][next_col] == PASSABLE)) {
-          auto new_cost = current_cost + 1;
+          const auto new_cost = current_cost + 1;
           State next_state{next_row, next_col, new_cost};
-          const auto iter = cost_so_far.find(next_state);
-          if (iter == cost_so_far.end() || new_cost < cost_so_far[next_state]) {
+          if (cost_so_far.find(next_state) == cost_so_far.end() ||
+              new_cost < cost_so_far[next_state]) {
             cost_so_far[next_state] = new_cost;
             came_from[next_state] = current;
+
+            // Add a manhattan distance heuristic to get A*.  Gotta be careful
+            // since the values are unsigned, so taking the absolute value
+            // of the difference won't work.
+            next_state.priority += std::max(next_state.row, end_row) -
+                                   std::min(next_state.row, end_row) +
+                                   std::max(next_state.col, end_col) -
+                                   std::min(next_state.col, end_col);
             frontier.push(next_state);
           }
         }
       }
     }
-
-    last_nonce = rng();
-    const auto new_seed =
-        generate_seed(last_nonce, last_solution_hash, buffer, hash);
-    rng.seed(new_seed);
   }
 }
 

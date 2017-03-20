@@ -8,6 +8,7 @@
 #include "rapidjson/stringbuffer.h"
 #include "rapidjson/writer.h"
 
+#include "cscoins_wallet.h"
 #include "guarded_value.h"
 #include "threadpool.h"
 
