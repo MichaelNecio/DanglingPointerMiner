@@ -91,7 +91,31 @@ std::vector<JobHandle> start_jobs(const Document& message,
   return {};
 }
 
-void send_submission(uWS::WebSocket<uWS::CLIENT>& ws, uint64_t nonce) {
+void send_registration(uWS::WebSocket<uWS::CLIENT>& ws,
+                       const cscoins_wallet::CSCoinsWallet& wallet) {
+  StringBuffer buffer;
+  Writer<StringBuffer> writer(buffer);
+  writer.StartObject();
+  writer.Key("command");
+  writer.String("register_wallet");
+  writer.Key("args");
+  writer.StartObject();
+  writer.Key("name");
+  writer.String("DanglingPointers");
+  writer.Key("key");
+  writer.String(wallet.public_key().data());
+  writer.Key("signature");
+  // const auto sig = wallet.sign_str(wallet.wallet_id());
+  writer.String(wallet.register_sig.data());
+  writer.EndObject();
+  writer.EndObject();
+
+  std::cout << "registering.." << std::endl;
+  ws.send(buffer.GetString());
+}
+
+void send_submission(uWS::WebSocket<uWS::CLIENT>& ws, uint64_t nonce,
+                     const std::string& wallet_id) {
   const auto nonce_string = std::to_string(nonce);
   StringBuffer buffer;
   Writer<StringBuffer> writer(buffer);
@@ -101,7 +125,7 @@ void send_submission(uWS::WebSocket<uWS::CLIENT>& ws, uint64_t nonce) {
   writer.Key("args");
   writer.StartObject();
   writer.Key("wallet_id");
-  writer.String("fuck");
+  writer.String(wallet_id.data());
   writer.Key("nonce");
   writer.String(nonce_string.data());
   writer.EndObject();
@@ -135,9 +159,10 @@ int main() {
   uWS::WebSocket<uWS::CLIENT> csgames_socket;
 
   cscoins_wallet::CSCoinsWallet wallet("public.pem", "private.pem",
-                                       "DanglingPointers");
+                                       "public.der", "DanglingPointers");
 
   ws.onConnection([&](uWS::WebSocket<uWS::CLIENT> s, uWS::HttpRequest _) {
+    send_registration(s, wallet);
     s.send("{\"command\":\"get_current_challenge\",\"args\":{}}");
     csgames_socket = s;
   });
@@ -163,7 +188,7 @@ int main() {
       nonce.hold();
       if (nonce.set()) {
         std::cout << "Nonce was discovered, making submission" << std::endl;
-        send_submission(csgames_socket, nonce.get());
+        send_submission(csgames_socket, nonce.get(), wallet.wallet_id());
         wait_jobs(job_handles, stop_jobs);
       }
       nonce.unset();

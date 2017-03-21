@@ -75,45 +75,70 @@ class CSCoinsWallet {
 
   CSCoinsWallet(const std::string& public_key_file,
                 const std::string& private_key_file,
-                const std::string& team_name) {
+                const std::string& der_file, const std::string& team_name) {
     load_keys_from_file(public_key_file, private_key_file);
-    generate_wallet_id(public_key_file, team_name);
+    generate_wallet_id(der_file);
   }
 
-  std::string sign_str(const std::string& msg) {
-    std::vector<unsigned char> raw(msg.begin(), msg.end());
-    const auto* digest = SHA256(raw.data(), raw.size(), nullptr);
+  const std::string& wallet_id() const { return wallet_id_; }
+  const std::string& public_key() const { return public_key_str_; }
 
+  std::string stringify(const unsigned char* digest,
+                        const unsigned int len) const {
+    const auto f = [](char c) { return c < 10 ? '0' + c : 'a' + (c - 10); };
+    std::string stringified;
+    for (unsigned i = 0; i < len; ++i) {
+      stringified.push_back(f(digest[i] >> 4));
+      stringified.push_back(f(digest[i] & 0x0F));
+    }
+    return stringified;
+  }
+
+  std::string sign_digest(
+      const unsigned char digest[SHA256_DIGEST_LENGTH]) const {
     std::vector<unsigned char> signature(RSA_size(private_key_.get()), 0);
     unsigned int siglen = 0;
     RSA_sign(NID_sha256, digest, SHA256_DIGEST_LENGTH, signature.data(),
              &siglen, private_key_.get());
-
-    const auto f = [](char c) { return c < 10 ? '0' + c : 'a' + (c - 10); };
-    std::string stringified;
-    for (unsigned i = 0; i < siglen; ++i) {
-      stringified.push_back(f(signature[i] >> 4));
-      stringified.push_back(f(signature[i] & 0x0F));
-    }
-
-    return stringified;
+    return stringify(signature.data(), siglen);
   }
+
+  std::string sign_str(const std::string& msg) const {
+    std::vector<unsigned char> raw(msg.begin(), msg.end());
+    const auto* digest = SHA256(raw.data(), raw.size(), nullptr);
+    return sign_digest(digest);
+  }
+
+  std::string register_sig;
 
  private:
   detail::RSAPtr public_key_;
   detail::RSAPtr private_key_;
   std::string wallet_id_;
+  std::string public_key_str_;
 
-  void generate_wallet_id(const std::string& public_path,
-                          const std::string& team_name) {
-    std::ifstream public_key_file(public_path);
-    std::string public_key_str(
-        (std::istreambuf_iterator<char>(public_key_file)),
-        std::istreambuf_iterator<char>());
-    std::string temp;
-    temp = team_name + "," + public_key_str;
-    // TODO: verify that this is correct.
-    wallet_id_ = sign_str(team_name);
+  void generate_wallet_id(const std::string& public_der_path) {
+    std::ifstream public_der_file(public_der_path);
+    unsigned char hash[SHA256_DIGEST_LENGTH];
+    char buffer[1000];
+
+    SHA256_CTX wallet_id_ctx;
+    SHA256_Init(&wallet_id_ctx);
+
+    while (public_der_file) {
+      public_der_file.read(buffer, 1000);
+      SHA256_Update(&wallet_id_ctx, buffer, public_der_file.gcount());
+    }
+
+    SHA256_Final(hash, &wallet_id_ctx);
+
+    register_sig = sign_digest(hash);
+
+    const auto f = [](char c) { return c < 10 ? '0' + c : 'a' + (c - 10); };
+    for (unsigned i = 0; i < SHA256_DIGEST_LENGTH; ++i) {
+      wallet_id_.push_back(f(hash[i] >> 4));
+      wallet_id_.push_back(f(hash[i] & 0x0F));
+    }
   }
 
   void load_keys_from_file(const std::string& public_path,
@@ -142,6 +167,11 @@ class CSCoinsWallet {
 
     CHECK(keys_are_pair(public_key_, private_key_),
           "These public/private keys aren't a pair.");
+
+    std::fstream s(public_path);
+    std::noskipws(s);
+    public_key_str_ = std::string(std::istream_iterator<char>(s),
+                                  std::istream_iterator<char>());
   }
 };
 
