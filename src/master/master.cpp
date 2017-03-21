@@ -134,6 +134,9 @@ int main() {
   uWS::Hub ws;
   uWS::WebSocket<uWS::CLIENT> csgames_socket;
 
+  cscoins_wallet::CSCoinsWallet wallet("public.pem", "private.pem",
+                                       "DanglingPointers");
+
   ws.onConnection([&](uWS::WebSocket<uWS::CLIENT> s, uWS::HttpRequest _) {
     s.send("{\"command\":\"get_current_challenge\",\"args\":{}}");
     csgames_socket = s;
