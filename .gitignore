@@ -1,3 +1,4 @@
+*.pem
 .vscode
 
 # Compiled Object files
