@@ -70,9 +70,6 @@ bool keys_are_pair(const RSAPtr& public_key, const RSAPtr& private_key) {
 
 class CSCoinsWallet {
  public:
-  // TODO: Method to sign strings
-  // TODO: Getter method for wallet id
-
   CSCoinsWallet(const std::string& public_key_file,
                 const std::string& private_key_file,
                 const std::string& der_file, const std::string& team_name) {
@@ -82,6 +79,7 @@ class CSCoinsWallet {
 
   const std::string& wallet_id() const { return wallet_id_; }
   const std::string& public_key() const { return public_key_str_; }
+  const std::string& registration_signature() const { return register_sig_; }
 
   std::string stringify(const unsigned char* digest,
                         const unsigned int len) const {
@@ -109,9 +107,8 @@ class CSCoinsWallet {
     return sign_digest(digest);
   }
 
-  std::string register_sig;
-
  private:
+  std::string register_sig_;
   detail::RSAPtr public_key_;
   detail::RSAPtr private_key_;
   std::string wallet_id_;
@@ -132,13 +129,8 @@ class CSCoinsWallet {
 
     SHA256_Final(hash, &wallet_id_ctx);
 
-    register_sig = sign_digest(hash);
-
-    const auto f = [](char c) { return c < 10 ? '0' + c : 'a' + (c - 10); };
-    for (unsigned i = 0; i < SHA256_DIGEST_LENGTH; ++i) {
-      wallet_id_.push_back(f(hash[i] >> 4));
-      wallet_id_.push_back(f(hash[i] & 0x0F));
-    }
+    register_sig_ = sign_digest(hash);
+    wallet_id_ = stringify(hash, SHA256_DIGEST_LENGTH);
   }
 
   void load_keys_from_file(const std::string& public_path,

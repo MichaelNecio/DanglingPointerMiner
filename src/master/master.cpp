@@ -105,8 +105,7 @@ void send_registration(uWS::WebSocket<uWS::CLIENT>& ws,
   writer.Key("key");
   writer.String(wallet.public_key().data());
   writer.Key("signature");
-  // const auto sig = wallet.sign_str(wallet.wallet_id());
-  writer.String(wallet.register_sig.data());
+  writer.String(wallet.registration_signature().data());
   writer.EndObject();
   writer.EndObject();
 
