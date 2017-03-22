@@ -7,10 +7,12 @@ CPPFLAGS = 	-I dep/rapidjson/include \
 			-I src/lib -I src/solvers \
 			-I /usr/local/opt/openssl/include \
 			-L /usr/local/opt/openssl/lib \
-			-lz -lssl -lcrypto -L dep/uWebSockets -luWS
+			-lz -lssl -lcrypto -lpthread -L dep/uWebSockets -luWS
 
 all:
-	g++ $(CPPFLAGS) -lcrypto -lpthread src/master/master.cpp -std=c++14 -O3 -o DanglingPointerMiner
+	$(MAKE) -C dep
+	g++ $(CPPFLAGS) src/master/master.cpp -static-libstdc++ -std=c++14 -O3 -o DanglingPointerMiner
 
 osx:
-	g++ $(CPPFLAGS) -lcrypto -lpthread src/master/master.cpp -std=c++14 -O3 -luv
+	$(MAKE) -C dep
+	g++ $(CPPFLAGS) src/master/master.cpp -std=c++14 -O3 -luv
