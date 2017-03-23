@@ -72,7 +72,7 @@ class CSCoinsWallet {
  public:
   CSCoinsWallet(const std::string& public_key_file,
                 const std::string& private_key_file,
-                const std::string& der_file, const std::string& team_name) {
+                const std::string& der_file) {
     load_keys_from_file(public_key_file, private_key_file);
     generate_wallet_id(der_file);
   }

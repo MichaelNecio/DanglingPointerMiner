@@ -157,8 +157,8 @@ int main() {
   uWS::Hub ws;
   uWS::WebSocket<uWS::CLIENT> csgames_socket;
 
-  cscoins_wallet::CSCoinsWallet wallet("public.pem", "private.pem",
-                                       "public.der", "DanglingPointers");
+  cscoins_wallet::CSCoinsWallet wallet("public.pem", "private.pem", 
+                                       "public.der");
 
   ws.onConnection([&](uWS::WebSocket<uWS::CLIENT> s, uWS::HttpRequest _) {
     send_registration(s, wallet);
