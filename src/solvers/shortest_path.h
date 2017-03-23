@@ -65,7 +65,7 @@ void reset_grid(std::vector<std::vector<bool>>& grid) {
   // First row and last rows are blocked.
   std::fill(grid.front().begin(), grid.front().end(), BLOCKED);
   std::fill(grid.back().begin(), grid.back().end(), BLOCKED);
-  for (unsigned row = 1; row < grid.size() - 1; ++row) {
+  for (size_t row = 1; row < grid.size() - 1; ++row) {
     std::fill(grid[row].begin(), grid[row].end(), PASSABLE);
     // First and last columns are blocked.
     grid[row].front() = BLOCKED;
@@ -185,7 +185,7 @@ void solve_shortest_path(const std::string& last_solution_hash,
 
       const auto current_cost = cost_so_far[current];
 
-      for (int i = 0; i < delta_row.size(); ++i) {
+      for (size_t i = 0; i < delta_row.size(); ++i) {
         // NOTE: I don't think this will underflow since the 0'th row and col
         // are all blockers, therefore they will never be in the queue.
         // But this could be a source of error.
