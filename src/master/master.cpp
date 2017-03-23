@@ -17,7 +17,6 @@
 #include "sorted_list.h"
 
 using namespace rapidjson;
-using namespace std::literals::chrono_literals;
 using JobHandle = std::future<void>;
 
 Document parse_json(const std::string& message) {
@@ -192,7 +191,7 @@ int main() {
       }
       nonce.unset();
       nonce.drop();
-      std::this_thread::sleep_for(500ms);
+      std::this_thread::yield();
     }
   });
 
