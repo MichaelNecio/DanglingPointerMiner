@@ -6,7 +6,7 @@ RUN apt-get install -y build-essential
 RUN apt-get install -y g++
 RUN apt-get install -y make
 RUN apt-get install -y openssl
-RUN apt-get install -y openssl-dev
+RUN apt-get install -y libcrypto1.0.0-udeb
 RUN apt-get install -y libssl1.0.0
 RUN apt-get install -y libssl-dev
 RUN git clone https://DanglingPointerMiner:thefastest1@github.com/MichaelNecio/DanglingPointerMiner.git --recursive
