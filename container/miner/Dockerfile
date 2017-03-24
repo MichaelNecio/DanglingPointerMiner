@@ -10,6 +10,5 @@ RUN apt-get install -y libssl1.0.0
 RUN apt-get install -y libssl-dev
 RUN git clone https://DanglingPointerMiner:thefastest1@github.com/MichaelNecio/DanglingPointerMiner.git --recursive
 WORKDIR  DanglingPointerMiner
-RUN make ./dep/
 RUN make
 ENTRYPOINT DanglingPointerMiner 

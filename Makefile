@@ -14,6 +14,7 @@ CPPFLAGS = 	-I dep/rapidjson/include \
 			-lz -lssl -lcrypto -lpthread
 
 all:
+	$(MAKE) -C dep
 	$(CXX) $(CXXFLAGS) $(CPPFLAGS) src/master/master.cpp -static-libstdc++ -o DanglingPointerMiner
 
 osx:
