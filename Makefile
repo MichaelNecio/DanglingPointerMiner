@@ -8,7 +8,6 @@ CXXFLAGS = $(CCFLAGS) -std=c++14 -fno-rtti
 CPPFLAGS = 	-I dep/rapidjson/include \
 			-I dep/uWebSockets/src \
 			-I src/lib -I src/solvers \
-			-L ./dep/uWebSockets/libuWS.so \
 			-lz -lssl -lcrypto -lpthread -luWS
 
 all:
