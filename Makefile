@@ -11,7 +11,7 @@ CPPFLAGS = 	-I dep/rapidjson/include \
 			-I /usr/local/opt/openssl/include \
 			-L /usr/local/opt/openssl/lib \
 			-L $$PWD/dep/uWebSockets/libuWS.so \
-			-lz -lssl -lcrypto -lpthread
+			-lz -lssl -lcrypto -lpthread -luWS
 
 all:
 	$(MAKE) -C dep
