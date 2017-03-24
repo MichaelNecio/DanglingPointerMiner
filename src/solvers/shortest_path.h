@@ -6,7 +6,6 @@
 #include <array>
 #include <atomic>
 #include <cstring>
-#include <iostream>
 #include <queue>
 #include <random>
 #include <string>
@@ -78,8 +77,6 @@ void solve_shortest_path(const std::string& last_solution_hash,
                          const int n_blockers, const std::atomic<bool>& stopped,
                          GuardedValue<uint64_t>& nonce,
                          const uint64_t initial_nonce) {
-  std::cout << "Mining from " << std::this_thread::get_id() << std::endl;
-
   std::string buffer;
   unsigned char hash[SHA256_DIGEST_LENGTH];
   uint64_t last_nonce = initial_nonce;

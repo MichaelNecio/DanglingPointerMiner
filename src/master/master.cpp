@@ -42,7 +42,6 @@ std::vector<JobHandle> start_sorted_list_jobs(const Document& message,
   std::vector<JobHandle> handles;
   // Intentional copy.
   for (unsigned i = 0; i < std::thread::hardware_concurrency(); ++i) {
-    std::cout << "Starting thread: " << i << std::endl;
     handles.emplace_back(pool.add(solve_sorted_list<Comparator>,
                                   last_solution_hash, hash_prefix, n_elements,
                                   std::cref(stop), std::ref(nonce), rand()));
@@ -63,7 +62,6 @@ std::vector<JobHandle> start_shortest_path_jobs(const Document& message,
   std::vector<JobHandle> handles;
   // Intentional copy.
   for (unsigned i = 0; i < std::thread::hardware_concurrency(); ++i) {
-    std::cout << "Starting thread: " << i << std::endl;
     handles.emplace_back(pool.add(solve_shortest_path, last_solution_hash,
                                   hash_prefix, grid_size, n_blockers,
                                   std::cref(stop), std::ref(nonce), rand()));
@@ -85,7 +83,7 @@ std::vector<JobHandle> start_jobs(const Document& message,
   } else if (challenge_type == "shortest_path") {
     return start_shortest_path_jobs(message, pool, stop, nonce);
   } else {
-    std::cout << "unsupported challenge type: " << challenge_type << std::endl;
+    std::cerr << "Unsupported challenge type: " << challenge_type << std::endl;
   }
   return {};
 }
@@ -108,7 +106,6 @@ void send_registration(uWS::WebSocket<uWS::CLIENT>& ws,
   writer.EndObject();
   writer.EndObject();
 
-  std::cout << "registering.." << std::endl;
   ws.send(buffer.GetString());
 }
 
@@ -129,7 +126,6 @@ void send_submission(uWS::WebSocket<uWS::CLIENT>& ws, uint64_t nonce,
   writer.EndObject();
   writer.EndObject();
 
-  std::cout << "sending: " << buffer.GetString() << std::endl;
   ws.send(buffer.GetString());
 }
 
@@ -168,16 +164,12 @@ int main() {
   ws.onMessage([&](uWS::WebSocket<uWS::CLIENT> s, const char* message,
                    size_t length, uWS::OpCode) {
     std::string actual_message(message, message + length);
-    std::cout << "Received: " << std::endl << actual_message << std::endl;
-    std::cout << "length: " << length << std::endl;
     const auto json_message = parse_json(actual_message);
 
     if (!is_challenge_message(json_message)) return;
 
-    std::cout << "Stopping existing jobs" << std::endl;
     wait_jobs(job_handles, stop_jobs);
 
-    std::cout << "Starting mining jobs" << std::endl;
     job_handles = start_jobs(json_message, thread_pool, stop_jobs, nonce);
   });
 
@@ -185,7 +177,6 @@ int main() {
     while (true) {
       nonce.hold();
       if (nonce.set()) {
-        std::cout << "Nonce was discovered, making submission" << std::endl;
         send_submission(csgames_socket, nonce.get(), wallet.wallet_id());
         wait_jobs(job_handles, stop_jobs);
       }

@@ -1,6 +1,6 @@
 CC  = gcc
 CXX = g++
-CCFLAGS  = -Wall -Wextra -pthread -O3
+CCFLAGS  = -Wall -Wextra -pthread -Ofast -march=native
 CXXFLAGS = $(CCFLAGS) -std=c++14
 CPPFLAGS = 	-I dep/rapidjson/include \
 			-I dep/uWebSockets/src \
@@ -10,9 +10,7 @@ CPPFLAGS = 	-I dep/rapidjson/include \
 			-lz -lssl -lcrypto -lpthread -luWS
 
 all:
-	$(MAKE) -C dep
 	$(CXX) $(CXXFLAGS) $(CPPFLAGS) src/master/master.cpp -static-libstdc++ -o DanglingPointerMiner
 
 osx:
-	$(MAKE) -C dep
 	$(CXX) $(CXXFLAGS) $(CPPFLAGS) src/master/master.cpp -luv

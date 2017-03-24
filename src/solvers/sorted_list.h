@@ -53,8 +53,6 @@ void solve_sorted_list(const std::string& last_solution_hash,
                        const std::atomic<bool>& stopped,
                        GuardedValue<uint64_t>& nonce,
                        const uint64_t initial_nonce) {
-  std::cout << "Mining from " << std::this_thread::get_id() << std::endl;
-
   std::string buffer;
   Comparator cmp;
   unsigned char hash[SHA256_DIGEST_LENGTH];
