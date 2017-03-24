@@ -198,13 +198,16 @@ void solve_shortest_path(const std::string& last_solution_hash,
             cost_so_far[next_state] = new_cost;
             came_from[next_state] = current;
 
+            // RIP A*.  Using this makes our results inconsistent with theirs,
+            // and thus it must be deleted.
+            //
             // Add a manhattan distance heuristic to get A*.  Gotta be careful
             // since the values are unsigned, so taking the absolute value
             // of the difference won't work.
-            next_state.priority += std::max(next_state.row, end_row) -
-                                   std::min(next_state.row, end_row) +
-                                   std::max(next_state.col, end_col) -
-                                   std::min(next_state.col, end_col);
+            // next_state.priority += std::max(next_state.row, end_row) -
+            //                       std::min(next_state.row, end_row) +
+            //                       std::max(next_state.col, end_col) -
+            //                       std::min(next_state.col, end_col);
             frontier.push(next_state);
           }
         }
