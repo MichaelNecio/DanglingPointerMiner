@@ -4,6 +4,3 @@
 [submodule "dep/rapidjson"]
     path = dep/rapidjson
     url = https://github.com/miloyip/rapidjson.git
-[submodule "dep/uWebSockets"]
-    path = dep/uWebSockets
-    url = https://github.com/uWebSockets/uWebSockets
