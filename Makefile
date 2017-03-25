@@ -12,7 +12,7 @@ CPPFLAGS = 	-I dep/rapidjson/include \
 
 all:
 	$(MAKE) -C dep
-	$(CXX) src/master/master.cpp -static-libstdc++ -o DanglingPointerMiner $(CXXFLAGS) $(CPPFLAGS)
+	$(CXX) src/master/master.cpp -o DanglingPointerMiner $(CXXFLAGS) $(CPPFLAGS)
 
 osx:
 	$(CXX) $(CXXFLAGS) $(CPPFLAGS) src/master/master.cpp -luv

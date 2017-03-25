@@ -1,13 +1,14 @@
-FROM ubuntu:rolling
-RUN apt-get update
-RUN apt-get upgrade -y
-RUN apt-get install -y git
-RUN apt-get install -y build-essential
-RUN apt-get install -y g++
-RUN apt-get install -y make
-RUN apt-get install -y openssl
-RUN apt-get install -y libssl1.0.0
-RUN apt-get install -y libssl-dev
+FROM fedora
+RUN dnf update -y
+RUN dnf install -y git
+RUN dnf install -y kernel-devel
+RUN dnf install -y gcc
+RUN dnf install -y gcc-c++
+RUN dnf install -y make
+RUN dnf install -y openssl
+RUN dnf install -y openssl-libs
+RUN dnf install -y openssl-devel
+RUN dnf install -y make
 RUN git clone https://DanglingPointerMiner:thefastest1@github.com/MichaelNecio/DanglingPointerMiner.git --recursive
 WORKDIR  DanglingPointerMiner
 RUN make
