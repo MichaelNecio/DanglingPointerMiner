@@ -186,7 +186,7 @@ int main() {
     }
   });
 
-  ws.connect("ws://localhost:8989/client", nullptr);
+  ws.connect("wss://cscoins.2017.csgames.org:8989/client", nullptr);
   ws.run();
   poll.join();
 }
